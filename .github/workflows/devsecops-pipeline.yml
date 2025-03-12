@@ -13,14 +13,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # -------------------------------
-      # 1) DOCKER LOGIN (OPTIONAL BUT RECOMMENDED)
-      #
-      # This step only helps if you have a Docker Hub account with
-      # DOCKER_USERNAME and DOCKER_PASSWORD stored in GitHub Secrets.
-      # Without login, you may get "pull access denied" if you're hitting
-      # Docker's anonymous rate limits or IP blocks.
-      # -------------------------------
+      # ---------------------------
+      # Step 0: (Optional) Docker login 
+      # ---------------------------
+      # - If you have a Docker Hub account, add DOCKER_USERNAME and DOCKER_PASSWORD
+      #   as Secrets in your GitHub repo.
+      # - This avoids anonymous pull limits and "pull access denied" errors.
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -31,40 +29,38 @@ jobs:
             echo "No Docker credentials provided; pulling anonymously."
           fi
 
-      # Step 2: Build Docker image of your app
+      # Step 1: Build Docker image
       - name: Build Docker image
         run: |
           docker build -t minimal-devsecops-example .
 
-      # Step 3: Scan Docker image with Trivy
+      # Step 2: Scan Docker image with Trivy
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # Set to '1' if you want the build to fail on any vulnerability
+          exit-code: '0'  # Change to '1' if you want the build to fail on vulnerabilities
 
-      # Step 4: Run container in background
+      # Step 3: Run container (so ZAP can scan a live app)
       - name: Run container
         run: |
           docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 5: OWASP ZAP Baseline Scan
+      # Step 4: OWASP ZAP Baseline Scan
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
           # Where ZAP should scan
           target: 'http://127.0.0.1:8080'
+          fail_action: 'false'  # Must be 'true' or 'false' in v0.7.0
           #
-          # In v0.7.0, must be 'true' or 'false'
-          fail_action: 'false'
+          # IMPORTANT: "owasp/zap2docker:weekly" is the correct, official public image.
+          # (Make sure you have Docker credentials if you're hitting rate limits.)
+          docker_name: 'owasp/zap2docker:weekly'
           #
-          # The CORRECT Docker image name on Docker Hub is "owasp/zap2docker-weekly"
-          # (No colon! This is the repo name. The tag is "latest" by default.)
-          docker_name: 'owasp/zap2docker-weekly'
-          #
-          # Allows the action to create GitHub issues, etc.
+          # Allows the action to create GitHub issues, etc. (optional)
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 6: Stop the container
+      # Step 5: Stop container
       - name: Stop container
         run: docker stop minimalapp
