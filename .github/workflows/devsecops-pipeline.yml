@@ -13,6 +13,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      # (Optional) Docker login
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -23,28 +24,34 @@ jobs:
             echo "No Docker credentials provided; pulling anonymously."
           fi
 
+      # Step 1: Build your Docker image
       - name: Build Docker image
         run: docker build -t minimal-devsecops-example .
 
+      # Step 2: Scan Docker image with Trivy
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'
+          exit-code: '0'  # Set to '1' if you want the pipeline to fail on vulnerabilities
 
+      # Step 3: Run your container
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
+      # Step 4: OWASP ZAP Baseline Scan
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
+          # The URL of your running app
           target: 'http://127.0.0.1:8080'
           # Must be 'true' or 'false' in v0.7.0
           fail_action: 'false'
-          # CORRECT official ZAP weekly image on Docker Hub
-          docker_name: 'owasp/zap2docker:weekly'
-          # Optional but recommended to allow ZAP to open issues, etc.
+          # According to official ZAP docs, the weekly image is "zaproxy/zap-weekly"
+          docker_name: 'zaproxy/zap-weekly'
+          # Allows the action to create GitHub issues, etc.
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Step 5: Stop your container
       - name: Stop container
         run: docker stop minimalapp
