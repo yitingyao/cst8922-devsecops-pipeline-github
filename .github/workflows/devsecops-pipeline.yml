@@ -13,7 +13,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # (Optional) Docker login to avoid rate-limit errors on Docker Hub
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -24,7 +23,7 @@ jobs:
             echo "No Docker credentials provided; pulling anonymously."
           fi
 
-      # Step 1: Build the Docker image
+      # Step 1: Build Docker image
       - name: Build Docker image
         run: docker build -t minimal-devsecops-example .
 
@@ -33,20 +32,23 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # change to '1' if you want to fail on vulnerabilities
+          exit-code: '0'  # set to '1' if you want to fail on vulnerabilities
 
-      # Step 3: Run container (so ZAP can scan the live app)
+      # Step 3: Run container so ZAP can test a live app
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan (No artifact/issue creation)
+      # Step 4: OWASP ZAP Baseline Scan (NO artifact/issue creation)
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
+          # The URL of your running container
           target: 'http://127.0.0.1:8080'
+          # Must be 'true' or 'false' in v0.7.0
           fail_action: 'false'
+          # Official ZAP weekly image
           docker_name: 'zaproxy/zap-weekly'
-          # Omit token/issue_title to skip GitHub Issues or artifact uploads
+          # IMPORTANT: We omit "token" and "issue_title" so it won't try to create GitHub Issues or artifacts
 
       # Step 5: Stop the container
       - name: Stop container
