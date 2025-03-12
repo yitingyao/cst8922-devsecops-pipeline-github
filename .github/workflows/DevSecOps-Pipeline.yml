@@ -45,12 +45,10 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target: 'http://127.0.0.1:8080'
-          fail_action: 'none'          # or 'warn' / 'error'
+          fail_action: 'false'      # Must be strictly 'true' or 'false'
           docker_name: 'zaproxy/zap-weekly'
           allow_issue_writing: 'false'
-          # artifact_name is required if you don't want the default "zap_scan".
-          # If you have no permission to create artifacts, either skip the Action or fork it.
-          artifact_name: 'zap-scan-report'
+          artifact_name: 'zapscanreport'  # Only letters/numbers
 
       # Step 5: Stop container
       - name: Stop container
