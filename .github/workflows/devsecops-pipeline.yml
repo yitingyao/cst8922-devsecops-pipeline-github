@@ -39,8 +39,11 @@ jobs:
         uses: zaproxy/action-baseline@v0.7.0
         with:
           target: 'http://127.0.0.1:8080'
-          fail_action: 'false'               # must be 'true' or 'false'
-          docker_name: 'owasp/zap2docker-weekly'
+          # Must be 'true' or 'false' in v0.7.0
+          fail_action: 'false'
+          # CORRECT official ZAP weekly image on Docker Hub
+          docker_name: 'owasp/zap2docker:weekly'
+          # Optional but recommended to allow ZAP to open issues, etc.
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Stop container
