@@ -39,15 +39,18 @@ jobs:
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan (no Issues, no Artifact)
+      # Step 4: OWASP ZAP Baseline Scan
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.10.0
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           target: 'http://127.0.0.1:8080'
-          fail_action: 'false'
+          fail_action: 'none'          # or 'warn' / 'error'
           docker_name: 'zaproxy/zap-weekly'
-          allow_issue_writing: 'false'  # no GitHub issues
-          upload_report: 'false'        # disable artifact uploading
+          allow_issue_writing: 'false'
+          # artifact_name is required if you don't want the default "zap_scan".
+          # If you have no permission to create artifacts, either skip the Action or fork it.
+          artifact_name: 'zap-scan-report'
 
       # Step 5: Stop container
       - name: Stop container
