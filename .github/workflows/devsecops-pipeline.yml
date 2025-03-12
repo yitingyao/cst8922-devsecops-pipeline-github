@@ -13,11 +13,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # (Optional) Docker login step
-      # Helps avoid Docker Hub rate limits and "pull access denied" issues
-      # if you have DOCKER_USERNAME and DOCKER_PASSWORD stored as GitHub secrets
+      # (Optional) Docker login to avoid "pull access denied" or rate-limiting
       - name: Docker login
         run: |
+          # Only runs if DOCKER_USERNAME and DOCKER_PASSWORD secrets are defined
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
             echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
               --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -28,29 +27,31 @@ jobs:
 
       # Step 1: Build Docker image
       - name: Build Docker image
-        run: docker build -t minimal-devsecops-example .
+        run: |
+          docker build -t minimal-devsecops-example .
 
-      # Step 2: Container Image Scan with Trivy
+      # Step 2: Scan Docker image with Trivy
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # Set to '1' if you want the build to fail on any vulnerability
+          exit-code: '0'  # change to '1' if you want to fail on detected vulnerabilities
 
-      # Step 3: Run the container
+      # Step 3: Run container in background
       - name: Run container
-        run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
+        run: |
+          docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
       # Step 4: OWASP ZAP Baseline Scan
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
           target: 'http://127.0.0.1:8080'
-          # Must be 'true' or 'false' for v0.7.0 (warn/ignore not valid in this version)
+          # Valid in v0.7.0 => 'true' or 'false' (no "warn" or "ignore")
           fail_action: 'false'
-          # Use the correct image on Docker Hub:
-          docker_name: 'zaproxy/zap2docker-stable'
-          # Token allows the action to create Issues, etc. (optional, but recommended)
+          # IMPORTANT: Use the correct official ZAP image:
+          docker_name: 'owasp/zap2docker-weekly'
+          # or 'owasp/zap2docker-stable' if you want the stable release
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 5: Stop the container
