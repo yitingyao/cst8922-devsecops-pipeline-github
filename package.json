@@ -1,0 +1,8 @@
+{
+    "name": "minimal-devsecops-example",
+    "version": "1.0.0",
+    "scripts": {
+      "start": "node app.js"
+    }
+  }
+  
