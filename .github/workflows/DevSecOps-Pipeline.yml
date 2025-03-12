@@ -51,3 +51,19 @@ jobs:
       # Step 5: Stop container
       - name: Stop container
         run: docker stop minimalapp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
