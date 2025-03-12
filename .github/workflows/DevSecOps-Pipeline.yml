@@ -35,35 +35,34 @@ jobs:
           image-ref: 'minimal-devsecops-example'
           exit-code: '0'  # set to '1' if you want the pipeline to fail on vulnerabilities
 
-      # Step 3: Run container for ZAP (the target app)
+      # Step 3: Run the target container (our minimal app)
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan (manual)
-      #    This runs ZAP Baseline in a one-off container, scanning the app at localhost:8080.
-      #    No artifacts are uploaded; the results appear in the job logs.
-      - name: ZAP Baseline (manual)
+      # Step 4: OWASP ZAP Baseline Scan (Manual Docker)
+      - name: ZAP Baseline Scan (manual)
         run: |
           docker run --network=host \
-            zaproxy/zap-weekly \
-            zap-baseline.py -t http://127.0.0.1:8080 \
-                            -J report_json.json \
-                            -w report_md.md \
-                            -r report_html.html
-
-      # (Optional) If you want to save reports, mount the workspace:
-      #
-      # - name: ZAP Baseline (manual)
-      #   run: |
-      #     docker run --network=host -v "$PWD":/zap/wrk \
-      #       zaproxy/zap-weekly \
-      #       zap-baseline.py -t http://127.0.0.1:8080 \
-      #                       -J /zap/wrk/report_json.json \
-      #                       -w /zap/wrk/report_md.md \
-      #                       -r /zap/wrk/report_html.html
-      #
-      # That way, the generated report_* files end up in your GitHub Actions workspace.
+                     -v "$(pwd)":/zap/wrk \
+                     zaproxy/zap-weekly \
+            zap-baseline.py \
+              -t http://127.0.0.1:8080 \
+              -J /zap/wrk/report_json.json \
+              -w /zap/wrk/report_md.md \
+              -r /zap/wrk/report_html.html
+          # This produces:
+          #   report_json.json, report_md.md, and report_html.html 
+          #   in your Actions workspace.
 
       # Step 5: Stop container
       - name: Stop container
         run: docker stop minimalapp
+
+      # (Optional) Step 6: Print or handle the reports
+      - name: Show reports in the logs (optional)
+        run: |
+          echo "Markdown report:"
+          cat report_md.md
+          echo ""
+          echo "JSON summary:"
+          cat report_json.json
