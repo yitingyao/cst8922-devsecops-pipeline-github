@@ -5,6 +5,11 @@ on:
     branches: [ "main" ]
   pull_request:
 
+# NEW: Grant the GitHub Actions token permission to create issues
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   build-test-scan:
     runs-on: ubuntu-latest
@@ -13,7 +18,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # (Optional) Docker login
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -47,9 +51,9 @@ jobs:
           target: 'http://127.0.0.1:8080'
           # Must be 'true' or 'false' in v0.7.0
           fail_action: 'false'
-          # According to official ZAP docs, the weekly image is "zaproxy/zap-weekly"
+          # Official ZAP weekly image
           docker_name: 'zaproxy/zap-weekly'
-          # Allows the action to create GitHub issues, etc.
+          # Allows ZAP to create Issues for warnings
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 5: Stop your container
