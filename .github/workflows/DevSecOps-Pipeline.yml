@@ -35,20 +35,34 @@ jobs:
           image-ref: 'minimal-devsecops-example'
           exit-code: '0'  # set to '1' if you want the pipeline to fail on vulnerabilities
 
-      # Step 3: Run container for ZAP
+      # Step 3: Run container for ZAP (the target app)
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan
-      - name: OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.10.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          target: 'http://127.0.0.1:8080'
-          fail_action: 'false'      # Must be strictly 'true' or 'false'
-          docker_name: 'zaproxy/zap-weekly'
-          allow_issue_writing: 'false'
-          artifact_name: 'zapscanreport'  # Only letters/numbers
+      # Step 4: OWASP ZAP Baseline Scan (manual)
+      #    This runs ZAP Baseline in a one-off container, scanning the app at localhost:8080.
+      #    No artifacts are uploaded; the results appear in the job logs.
+      - name: ZAP Baseline (manual)
+        run: |
+          docker run --network=host \
+            zaproxy/zap-weekly \
+            zap-baseline.py -t http://127.0.0.1:8080 \
+                            -J report_json.json \
+                            -w report_md.md \
+                            -r report_html.html
+
+      # (Optional) If you want to save reports, mount the workspace:
+      #
+      # - name: ZAP Baseline (manual)
+      #   run: |
+      #     docker run --network=host -v "$PWD":/zap/wrk \
+      #       zaproxy/zap-weekly \
+      #       zap-baseline.py -t http://127.0.0.1:8080 \
+      #                       -J /zap/wrk/report_json.json \
+      #                       -w /zap/wrk/report_md.md \
+      #                       -r /zap/wrk/report_html.html
+      #
+      # That way, the generated report_* files end up in your GitHub Actions workspace.
 
       # Step 5: Stop container
       - name: Stop container
