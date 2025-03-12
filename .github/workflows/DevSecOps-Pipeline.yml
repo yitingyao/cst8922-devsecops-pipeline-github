@@ -33,21 +33,28 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # set to '1' if you want the pipeline to fail on vulnerabilities
+          exit-code: '0'  # set '1' if you want to fail on vulnerabilities
 
-      # Step 3: Run the target container (our minimal app)
+      # Step 3: Run your target container
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan (manual, with --autooff)
+      # Step 4: OWASP ZAP Baseline Scan (Manual)
+      # ----------------------------------------
+      # IMPORTANT:
+      #   1) Only ONE 'docker run' command, spread across multiple lines.
+      #   2) Use '--autooff' to disable the automation framework (avoiding the yaml copy error).
+      #   3) '-u root' to ensure we can write to /zap/wrk.
+      #   4) '-v "$(pwd)":/zap/wrk' to mount your workspace so reports are saved locally.
+      #
       - name: ZAP Baseline Scan (manual)
         run: |
           docker run --network=host \
-                     -u root \                        # Run as root
-                     -v "$(pwd)":/zap/wrk \           # Bind mount local dir to /zap/wrk
-                     zaproxy/zap-weekly \
+            -u root \
+            -v "$(pwd)":/zap/wrk \
+            zaproxy/zap-weekly \
             zap-baseline.py \
-              --autooff \                            # Disable the automation framework
+              --autooff \
               -t http://127.0.0.1:8080 \
               -J /zap/wrk/report_json.json \
               -w /zap/wrk/report_md.md \
@@ -57,10 +64,11 @@ jobs:
       - name: Stop container
         run: docker stop minimalapp
 
-      # Optional: Show the created reports in the logs
-      - name: Show ZAP Reports
+      # Step 6 (Optional): Show the reports in the logs, if desired
+      - name: Show ZAP Reports (optional)
         run: |
           echo "Markdown report:"
           cat report_md.md
+          echo ""
           echo "JSON summary:"
           cat report_json.json
