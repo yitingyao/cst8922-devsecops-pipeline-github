@@ -33,7 +33,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # set '1' if you want to fail on vulnerabilities
+          exit-code: '0'  # set '1' if you want the pipeline to fail on vulnerabilities
 
       # Step 3: Run your target container
       - name: Run container
@@ -58,7 +58,16 @@ jobs:
       - name: Stop container
         run: docker stop minimalapp
 
-      # (Optional) Step 6: Print or handle the ZAP reports
+      # Step 6: Base64-encode report_html.html
+      # This allows you to retrieve the raw HTML through logs.
+      - name: Base64 encode report_html
+        run: base64 report_html.html > report_html.b64
+
+      # Step 7: Print the base64-encoded HTML
+      - name: Print Base64 Encoded HTML
+        run: cat report_html.b64
+
+      # (Optional) Step 8: Print or handle the other ZAP reports
       - name: Show ZAP Reports (optional)
         run: |
           echo "Markdown report:"
