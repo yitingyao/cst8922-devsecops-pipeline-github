@@ -13,6 +13,14 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
+      # (Optional) Step 0: Docker login to avoid pull rate-limit errors
+      # This step only runs if DOCKER_USERNAME and DOCKER_PASSWORD secrets exist
+      - name: Docker login
+        if: ${{ secrets.DOCKER_USERNAME && secrets.DOCKER_PASSWORD }}
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login \
+            --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
       # Step 1: Build Docker image
       - name: Build Docker image
         run: |
@@ -23,7 +31,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # Change to '1' to fail on any discovered vulnerabilities
+          exit-code: '0'  # Change to '1' if you want to fail on discovered vulnerabilities
 
       # Step 3: Run the container in the background
       - name: Run container
@@ -35,8 +43,12 @@ jobs:
         uses: zaproxy/action-baseline@v0.7.0
         with:
           target: 'http://127.0.0.1:8080'
+          # Must be 'true' or 'false' with v0.7.0:
+          fail_action: 'false'
+          # Docker Hub image name for ZAP:
+          docker_name: 'owasp/zap2docker-stable'
+          # Allows action to create Issues, etc. (optional but recommended)
           token: ${{ secrets.GITHUB_TOKEN }}
-          fail_action: warn  # or 'error' or 'ignore'
 
       # Step 5: Stop the container
       - name: Stop container
