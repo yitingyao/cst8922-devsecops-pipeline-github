@@ -39,30 +39,28 @@ jobs:
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan (Manual Docker)
+      # Step 4: OWASP ZAP Baseline Scan (manual, with --autooff)
       - name: ZAP Baseline Scan (manual)
         run: |
           docker run --network=host \
-                     -v "$(pwd)":/zap/wrk \
+                     -u root \                        # Run as root
+                     -v "$(pwd)":/zap/wrk \           # Bind mount local dir to /zap/wrk
                      zaproxy/zap-weekly \
             zap-baseline.py \
+              --autooff \                            # Disable the automation framework
               -t http://127.0.0.1:8080 \
               -J /zap/wrk/report_json.json \
               -w /zap/wrk/report_md.md \
               -r /zap/wrk/report_html.html
-          # This produces:
-          #   report_json.json, report_md.md, and report_html.html 
-          #   in your Actions workspace.
 
       # Step 5: Stop container
       - name: Stop container
         run: docker stop minimalapp
 
-      # (Optional) Step 6: Print or handle the reports
-      - name: Show reports in the logs (optional)
+      # Optional: Show the created reports in the logs
+      - name: Show ZAP Reports
         run: |
           echo "Markdown report:"
           cat report_md.md
-          echo ""
           echo "JSON summary:"
           cat report_json.json
