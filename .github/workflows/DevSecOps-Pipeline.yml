@@ -13,7 +13,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # (Optional) Docker login to avoid Docker Hub rate limits
+      # (Optional) Docker login
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -35,11 +35,11 @@ jobs:
           image-ref: 'minimal-devsecops-example'
           exit-code: '0'
 
-      # Step 3: Run container (so ZAP can scan the live app)
+      # Step 3: Run container
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: Manually run the ZAP Baseline Scan
+      # Step 4: ZAP Baseline Scan manually
       - name: ZAP Baseline Scan
         run: |
           docker run --network=host \
@@ -58,12 +58,10 @@ jobs:
       - name: Stop container
         run: docker stop minimalapp
 
-      # Step 6: Upload ZAP Reports
-      #
-      # Pin to a commit SHA from the actions/upload-artifact repo (v3.1.2 commit).
-      # If this SHA ever changes or breaks, try a different pinned commit from the official repo.
+      # Step 6: Upload the ZAP Reports (pin to a known commit of v3.1.2)
+      #   https://github.com/actions/upload-artifact/commit/4e1e32c9354c30c95743b9fef874dcabf1faad67
       - name: Upload ZAP Reports
-        uses: actions/upload-artifact@df9779f3825ef9b0fe2f80556114dce3cbecf9d9
+        uses: actions/upload-artifact@4e1e32c9354c30c95743b9fef874dcabf1faad67
         with:
           name: zap-scan-reports
           path: |
