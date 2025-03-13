@@ -58,10 +58,9 @@ jobs:
       - name: Stop container
         run: docker stop minimalapp
 
-      # Step 6: Upload the ZAP Reports (pin to a known commit of v3.1.2)
-      #   https://github.com/actions/upload-artifact/commit/4e1e32c9354c30c95743b9fef874dcabf1faad67
+      # Step 6: Upload the ZAP reports with an older stable release
       - name: Upload ZAP Reports
-        uses: actions/upload-artifact@4e1e32c9354c30c95743b9fef874dcabf1faad67
+        uses: actions/upload-artifact@v2.2.4
         with:
           name: zap-scan-reports
           path: |
