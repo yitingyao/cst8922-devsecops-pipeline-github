@@ -39,7 +39,7 @@ jobs:
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: ZAP Baseline Scan (manually)
+      # Step 4: ZAP Baseline Scan (manual)
       - name: ZAP Baseline Scan
         run: |
           docker run --network=host \
@@ -58,9 +58,9 @@ jobs:
       - name: Stop container
         run: docker stop minimalapp
 
-      # Step 6: Upload the ZAP reports (local vendored version of upload-artifact)
+      # Step 6: Upload the ZAP reports from local ./.github/upload-artifact
       - name: Upload ZAP Reports
-        uses: ./.github/actions/upload-artifact
+        uses: ./.github/upload-artifact
         with:
           name: zap-scan-reports
           path: |
