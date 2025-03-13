@@ -13,7 +13,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # (Optional) Step: Docker login (avoid Docker Hub rate limits)
+      # (Optional) Docker login to avoid Docker Hub rate limits
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -33,17 +33,15 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # set '1' if you want to fail on vulnerabilities
+          exit-code: '0'  # Change to '1' to fail on vulnerabilities
 
-      # Step 3: Run your target container
+      # Step 3: Run the container (so ZAP can scan the live app)
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
       # Step 4: Manually run the ZAP Baseline Scan
       - name: ZAP Baseline Scan (Manual)
         run: |
-          # Pull/run the weekly ZAP container
-          # mount current dir: $(pwd) => /zap/wrk, so we can capture the reports
           docker run --network=host \
             -u root \
             -v "$(pwd)":/zap/wrk \
@@ -64,8 +62,7 @@ jobs:
       - name: Upload ZAP Reports
         uses: actions/upload-artifact@v3
         with:
-          # Use a short, dash-separated artifact name to avoid "Bad Request"
-          name: zap-scan-reports
+          name: zap-scan-reports     # short, dash-separated artifact name
           path: |
             report_html.html
             report_md.md
