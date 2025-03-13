@@ -13,7 +13,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # (Optional) Docker login to avoid Docker Hub rate limits
+      # (Optional) Step: Docker login (avoid Docker Hub rate limits)
       - name: Docker login
         run: |
           if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
@@ -33,15 +33,17 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'minimal-devsecops-example'
-          exit-code: '0'  # set '1' if you want the pipeline to fail on vulnerabilities
+          exit-code: '0'  # set '1' if you want to fail on vulnerabilities
 
       # Step 3: Run your target container
       - name: Run container
         run: docker run -d -p 8080:8080 --name minimalapp minimal-devsecops-example
 
-      # Step 4: OWASP ZAP Baseline Scan (Manual)
-      - name: ZAP Baseline Scan (manual)
+      # Step 4: Manually run the ZAP Baseline Scan
+      - name: ZAP Baseline Scan (Manual)
         run: |
+          # Pull/run the weekly ZAP container
+          # mount current dir: $(pwd) => /zap/wrk, so we can capture the reports
           docker run --network=host \
             -u root \
             -v "$(pwd)":/zap/wrk \
@@ -58,20 +60,13 @@ jobs:
       - name: Stop container
         run: docker stop minimalapp
 
-      # Step 6: Base64-encode report_html.html
-      # This allows you to retrieve the raw HTML through logs.
-      - name: Base64 encode report_html
-        run: base64 report_html.html > report_html.b64
-
-      # Step 7: Print the base64-encoded HTML
-      - name: Print Base64 Encoded HTML
-        run: cat report_html.b64
-
-      # (Optional) Step 8: Print or handle the other ZAP reports
-      - name: Show ZAP Reports (optional)
-        run: |
-          echo "Markdown report:"
-          cat report_md.md
-          echo ""
-          echo "JSON summary:"
-          cat report_json.json
+      # Step 6: Upload the ZAP reports as GitHub Artifacts
+      - name: Upload ZAP Reports
+        uses: actions/upload-artifact@v3
+        with:
+          # Use a short, dash-separated artifact name to avoid "Bad Request"
+          name: zap-scan-reports
+          path: |
+            report_html.html
+            report_md.md
+            report_json.json
